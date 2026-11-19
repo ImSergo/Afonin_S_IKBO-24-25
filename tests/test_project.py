@@ -8,7 +8,7 @@ from urllib.error import HTTPError
 
 from src.__main__ import main
 from src.repository import names_from_metadata, remote_source
-from src.graph import walk
+from src.graph import reverse_names, walk
 
 
 def invoke(arguments):
@@ -100,3 +100,10 @@ class GraphTests(unittest.TestCase):
         length = 2500
         graph = walk(0, lambda node: [node + 1], length)
         self.assertEqual(len(graph), length + 1)
+
+    def test_reverse_uses_entire_test_repository(self):
+        data = dict(A="B", B="C", C="B", D="C", E="")
+        self.assertEqual(reverse_names("C", data, 2, ""), ["A", "B", "D"])
+        self.assertEqual(reverse_names("C", data, 1, ""), ["B", "D"])
+        self.assertEqual(reverse_names("C", data, 2, "b"), ["D"])
+        self.assertEqual(reverse_names("E", data, 3, ""), [])

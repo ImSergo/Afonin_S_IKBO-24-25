@@ -4,7 +4,23 @@ import sys
 
 from .config import config
 from .repository import local_graph, normalize, remote_source
-from .graph import walk
+from .graph import reverse_names, walk
+
+
+def source_for(options):
+    """Return a package name, lookup and optional finite reverse index."""
+    if options.test_mode:
+        graph = local_graph(options.repo)
+        if options.package not in graph:
+            raise ValueError(f"Пакет {options.package} отсутствует в файле")
+        return options.package, graph.__getitem__, graph
+    lookup = remote_source(options.repo)
+    graph = {}
+    for root in options.scope:
+        part = walk(normalize(root), lookup, options.max_depth, options.filter)
+        for name, children in part.items():
+            graph.setdefault(name, set()).update(children)
+    return normalize(options.package), lookup, graph
 
 
 def report(options):
@@ -13,15 +29,11 @@ def report(options):
         for key, value in vars(options).items():
             print(f"{key}={value}")
         return
-    root = options.package
-    if options.test_mode:
-        graph = local_graph(options.repo)
-        if root not in graph:
-            raise ValueError(f"Нет пакета {root}")
-        lookup = graph.__getitem__
-    else:
-        root = normalize(root)
-        lookup = remote_source(options.repo)
+    root, lookup, index = source_for(options)
+    if options.mode == "reverse":
+        names = reverse_names(root, index, options.max_depth, options.filter)
+        print("\n".join(names))
+        return
     if options.mode == "direct-only":
         graph = walk(root, lookup, 1, options.filter)
         print("\n".join(sorted(graph.get(root, ()))))

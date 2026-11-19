@@ -27,3 +27,14 @@ def walk(root, dependencies, limit, excluded=""):
         graph[name].update(children)
         stack.extend((child, depth + 1) for child in reversed(children))
     return graph
+
+
+def reverse_names(root, graph, limit, excluded):
+    """Развернуть рёбра и найти потребителей тем же обходом."""
+    parents = {name: set() for name in graph}
+    for name, children in graph.items():
+        for child in children:
+            parents.setdefault(child, set()).add(name)
+    parents.setdefault(root, set())
+    found = walk(root, parents.__getitem__, limit, excluded)
+    return sorted(set(found) - {root})

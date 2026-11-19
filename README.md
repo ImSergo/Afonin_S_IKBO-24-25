@@ -51,3 +51,18 @@ python -m src -p A -t -r examples/repository.json -d 8 -f C --graph-only
 DFS использует явный стек. Если найден более короткий путь к вершине,
 её потомки проверяются снова с новым остатком глубины. Ребро цикла сохраняется,
 но проход с равной или большей глубиной не повторяется. Запросы PyPI кэшируются.
+
+### 4. Обратные зависимости
+
+```sh
+python -m src -p D -t -r examples/repository.json --reverse -d 1
+python -m src -p D -t -r examples/repository.json --reverse -d 2
+python -m src -p G -t -r examples/repository.json --reverse
+python -m src -p et-xmlfile --reverse --scope openpyxl -d 1
+```
+
+Результаты: `B, C, F`; затем `A, B, C, F`; для `G` список пуст; в последнем
+примере — `openpyxl`. Используется тот же DFS после обращения направления рёбер.
+В тестовом файле поиск идёт по всему репозиторию. Для PyPI область задаётся
+явно: сначала строится объединение графов от `--scope` до `--max-depth`, затем
+ищутся потребители внутри этого объединения. Это **не** поиск по всему PyPI.

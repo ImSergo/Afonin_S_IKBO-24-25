@@ -20,8 +20,9 @@ def parser():
     cli.add_argument("-o", "--output", type=Path, default=Path("graph.png"))
     cli.add_argument("-d", "--max-depth", type=int, default=DEFAULT_DEPTH)
     cli.add_argument("-f", "--filter", default="")
+    cli.add_argument("--scope", action="append", default=[], metavar="NAME")
     modes = cli.add_mutually_exclusive_group()
-    for flag in ("show-config","direct-only","graph-only",):
+    for flag in ("show-config","direct-only","graph-only","reverse",):
         modes.add_argument(f"--{flag}", dest="mode", action="store_const",
                            const=flag)
     cli.set_defaults(mode="graph-only")
@@ -46,7 +47,7 @@ def validate_source(options):
 def validate_query(options):
     """Check package names, substring and depth."""
     pattern = TEST_NAME if options.test_mode else PACKAGE
-    for name in [options.package]:
+    for name in [options.package, *options.scope]:
         if not re.fullmatch(pattern, name):
             raise ValueError(f"Недопустимое имя пакета: {name!r}")
     if options.max_depth < 0:
@@ -65,6 +66,14 @@ def validate_outputs(options):
         raise ValueError("--output: совпадение с входным файлом")
 
 
+def validate_scope(options):
+    """Reject ambiguous reverse queries."""
+    if options.scope and (options.test_mode or options.mode != "reverse"):
+        raise ValueError("--scope применяется только с --reverse для PyPI")
+    if options.mode == "reverse" and not (options.test_mode or options.scope):
+        raise ValueError("--reverse для PyPI требует --scope NAME")
+
+
 def config(arguments=None):
     """Parse arguments and reject invalid combinations."""
     cli = parser()
@@ -73,6 +82,7 @@ def config(arguments=None):
         validate_source(options)
         validate_query(options)
         validate_outputs(options)
+        validate_scope(options)
     except (OSError, ValueError) as error:
         cli.error(str(error))
     return options
