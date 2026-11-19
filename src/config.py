@@ -22,10 +22,10 @@ def parser():
     cli.add_argument("-f", "--filter", default="")
     cli.add_argument("--scope", action="append", default=[], metavar="NAME")
     modes = cli.add_mutually_exclusive_group()
-    for flag in ("show-config","direct-only","graph-only","reverse",):
+    for flag in ("show-config", "direct-only", "graph-only", "reverse"):
         modes.add_argument(f"--{flag}", dest="mode", action="store_const",
                            const=flag)
-    cli.set_defaults(mode="graph-only")
+    cli.set_defaults(mode="png")
     return cli
 
 

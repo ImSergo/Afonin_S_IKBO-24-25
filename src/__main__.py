@@ -3,8 +3,8 @@
 import sys
 
 from .config import config
+from .graph import dot_text, render, reverse_names, walk
 from .repository import local_graph, normalize, remote_source
-from .graph import reverse_names, walk
 
 
 def source_for(options):
@@ -39,8 +39,10 @@ def report(options):
         print("\n".join(sorted(graph.get(root, ()))))
         return
     graph = walk(root, lookup, options.max_depth, options.filter)
-    for name, children in graph.items():
-        print(name, "->", ", ".join(sorted(children)))
+    text = dot_text(graph)
+    if options.mode != "graph-only":
+        render(text, options.output)
+    print(text, end="")
 
 
 def main(arguments=None):
