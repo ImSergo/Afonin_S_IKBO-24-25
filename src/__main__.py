@@ -3,6 +3,7 @@
 import sys
 
 from .config import config
+from .repository import normalize, remote_source
 
 
 def report(options):
@@ -11,6 +12,10 @@ def report(options):
         for key, value in vars(options).items():
             print(f"{key}={value}")
         return
+    if options.test_mode:
+        raise ValueError("На этом этапе доступен только PyPI")
+    lookup = remote_source(options.repo)
+    print("\n".join(lookup(normalize(options.package))))
 
 
 def main(arguments=None):

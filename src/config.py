@@ -21,10 +21,10 @@ def parser():
     cli.add_argument("-d", "--max-depth", type=int, default=DEFAULT_DEPTH)
     cli.add_argument("-f", "--filter", default="")
     modes = cli.add_mutually_exclusive_group()
-    for flag in ("show-config",):
+    for flag in ("show-config","direct-only",):
         modes.add_argument(f"--{flag}", dest="mode", action="store_const",
                            const=flag)
-    cli.set_defaults(mode="show-config")
+    cli.set_defaults(mode="direct-only")
     return cli
 
 
