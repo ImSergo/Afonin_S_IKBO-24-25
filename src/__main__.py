@@ -3,7 +3,8 @@
 import sys
 
 from .config import config
-from .repository import normalize, remote_source
+from .repository import local_graph, normalize, remote_source
+from .graph import walk
 
 
 def report(options):
@@ -12,10 +13,22 @@ def report(options):
         for key, value in vars(options).items():
             print(f"{key}={value}")
         return
+    root = options.package
     if options.test_mode:
-        raise ValueError("На этом этапе доступен только PyPI")
-    lookup = remote_source(options.repo)
-    print("\n".join(lookup(normalize(options.package))))
+        graph = local_graph(options.repo)
+        if root not in graph:
+            raise ValueError(f"Нет пакета {root}")
+        lookup = graph.__getitem__
+    else:
+        root = normalize(root)
+        lookup = remote_source(options.repo)
+    if options.mode == "direct-only":
+        graph = walk(root, lookup, 1, options.filter)
+        print("\n".join(sorted(graph.get(root, ()))))
+        return
+    graph = walk(root, lookup, options.max_depth, options.filter)
+    for name, children in graph.items():
+        print(name, "->", ", ".join(sorted(children)))
 
 
 def main(arguments=None):

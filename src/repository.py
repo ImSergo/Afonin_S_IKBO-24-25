@@ -4,9 +4,10 @@ import json
 import re
 from functools import cache
 from http.client import HTTPException
+from pathlib import Path
 from urllib.request import urlopen
 
-from .config import PACKAGE
+from .config import PACKAGE, TEST_NAME
 
 
 TIMEOUT = 15
@@ -52,3 +53,20 @@ def remote_source(base):
             raise ValueError(f"Не удалось прочитать пакет {name}: {error}")
 
     return dependencies
+
+
+def local_graph(filename):
+    """Validate the entire fixture and add any implicit leaf nodes."""
+    data = json.loads(Path(filename).read_text(encoding="utf-8-sig"))
+    if not isinstance(data, dict):
+        raise ValueError("Тестовый репозиторий должен быть объектом JSON")
+    graph = {}
+    for name, children in data.items():
+        if not re.fullmatch(TEST_NAME, name) or not isinstance(children, list):
+            raise ValueError(f"Некорректная запись пакета {name!r}")
+        for child in children:
+            if not isinstance(child, str) or not re.fullmatch(TEST_NAME, child):
+                raise ValueError(f"Некорректная зависимость {child!r}")
+            graph.setdefault(child, ())
+        graph[name] = tuple(sorted(set(children)))
+    return graph

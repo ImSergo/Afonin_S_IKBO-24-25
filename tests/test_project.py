@@ -8,6 +8,7 @@ from urllib.error import HTTPError
 
 from src.__main__ import main
 from src.repository import names_from_metadata, remote_source
+from src.graph import walk
 
 
 def invoke(arguments):
@@ -72,3 +73,30 @@ class RepositoryTests(unittest.TestCase):
         request.return_value = io.BytesIO(b"not json")
         with self.assertRaisesRegex(ValueError, "other"):
             fetch("other")
+
+
+class GraphTests(unittest.TestCase):
+    """Exercise DFS independently of file, network and rendering."""
+
+    def test_shorter_path_reopens_boundary(self):
+        data = dict(A="BZ", B="C", C="Z", Z="D", D="E", E="")
+        graph = walk("A", data.__getitem__, 3)
+        self.assertEqual(graph["Z"], {"D"})
+        self.assertEqual(graph["D"], {"E"})
+
+    def test_cycle_and_self_loop(self):
+        data = dict(A="AB", B="A")
+        self.assertEqual(walk("A", data.get, 100), dict(A={"A", "B"}, B={"A"}))
+
+    def test_zero_depth_does_not_read(self):
+        self.assertEqual(walk("A", self.fail, 0), {"A": set()})
+
+    def test_filter_cuts_entire_branch(self):
+        data = dict(A="BC", B="D", C="", D="")
+        self.assertEqual(walk("A", data.get, 3, "b"), dict(A={"C"}, C=set()))
+        self.assertEqual(walk("A", self.fail, 3, "a"), {})
+
+    def test_deep_chain_needs_no_recursion(self):
+        length = 2500
+        graph = walk(0, lambda node: [node + 1], length)
+        self.assertEqual(len(graph), length + 1)
